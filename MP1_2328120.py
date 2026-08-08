@@ -93,19 +93,26 @@ print("Rows in MY dataset:", trips.count())
 
 # A1. How many rows and how many columns are in YOUR dataset?
 # TODO
-# Answer:
+# Answer:  rows(19614),columns(6) 
 # A1
 print("Rows:", trips.count())
 print("Columns:", len(trips.columns))
 
-# Comment: The dataset contains [WRITE RESULT] rows and 6 columns.
+# Comment: The dataset contains 19,614 rows and 6 columns.
 
 # COMMAND ----------
 
 # A2. Print the schema. In a comment, write the data type of every column in plain English,
 #     e.g. "fare_amount is a double — money in US dollars".
 # TODO
-# Answer:
+# Answer:# A2
+
+# tpep_pickup_datetime is a timestamp — the date and time when the taxi trip started.
+# tpep_dropoff_datetime is a timestamp — the date and time when the taxi trip ended.
+# trip_distance is a double — the distance travelled by the taxi in miles.
+# fare_amount is a double — the fare charged for the trip in US dollars.
+# pickup_zip is an integer — the ZIP code of the pickup location.
+# dropoff_zip is an integer — the ZIP code of the drop-off location.
 # A2
 trips.printSchema()
 
@@ -114,7 +121,7 @@ trips.printSchema()
 # A3. What is the earliest and the latest pickup timestamp in your data?
 #     Hint: F.min(...) and F.max(...) inside .agg()
 # TODO
-# Answer: the data covers ______ to ______
+# Answer: the data covers 2016-01-01 00:11:29 to 2016-02-29 23:51:20
 # A3
 result = trips.agg(
     F.min("tpep_pickup_datetime").alias("earliest_pickup"),
@@ -123,14 +130,14 @@ result = trips.agg(
 
 display(result)
 
-# Comment: The dataset covers the period from [EARLIEST] to [LATEST] based on pickup timestamps.
+# Comment: The dataset covers the period from January 1, 2016 to February 29, 2016 based on pickup timestamps.
 
 # COMMAND ----------
 
 # A4. How many rows are EXACT duplicates (every column identical to another row)?
 #     Hint: compare .count() with .dropDuplicates().count()
 # TODO
-# Answer: ______ duplicate rows
+# Answer: 284 duplicate rows
 # A4
 duplicate_count = (
     trips.groupBy(trips.columns)
@@ -142,7 +149,7 @@ duplicate_count = (
 
 print("Exact duplicate rows:", duplicate_count)
 
-# Comment: There are [RESULT] rows that are duplicate occurrences of another identical row.
+# Comment: There are 284 rows that are duplicate occurrences of another identical row.
 
 # COMMAND ----------
 
@@ -150,7 +157,7 @@ print("Exact duplicate rows:", duplicate_count)
 #     Hint: build one .agg() with F.count(F.when(F.col(c).isNull(), c)).alias(c) for each column,
 #     or loop over trips.columns.
 # TODO
-# Answer:
+# Answer: tpep_pickup_datetime: 0, tpep_dropoff_datetime: 0, trip_distance: 0, fare_amount: 205, pickup_zip: 0, dropoff_zip: 0
 # A5
 null_counts = trips.select([
     F.sum(F.col(c).isNull().cast("int")).alias(c)
@@ -166,7 +173,7 @@ display(null_counts)
 #     (b) trip_distance <= 0
 #     (c) dropoff timestamp is earlier than or equal to the pickup timestamp
 # TODO
-# Answer: (a) ______  (b) ______  (c) ______
+# Answer: (a) 10  (b) 63  (c) 1
 # A6.1
 fare_wrong = trips.filter(
     F.col("fare_amount").isNotNull() &
@@ -175,7 +182,7 @@ fare_wrong = trips.filter(
 
 print("fare_amount <= 0:", fare_wrong)
 
-# Comment: There are [RESULT] non-NULL rows with a fare amount less than or equal to zero.
+# Comment: There are 10 non-NULL rows with a fare amount less than or equal to zero.
 
 # A6.2
 distance_wrong = trips.filter(
@@ -185,7 +192,7 @@ distance_wrong = trips.filter(
 
 print("trip_distance <= 0:", distance_wrong)
 
-# Comment: There are [RESULT] non-NULL rows with a trip distance less than or equal to zero.
+# Comment: There are 63 non-NULL rows with a trip distance less than or equal to zero.
 
 # A6.3
 time_wrong = trips.filter(
@@ -196,7 +203,7 @@ time_wrong = trips.filter(
 
 print("dropoff <= pickup:", time_wrong)
 
-# Comment: There are [RESULT] non-NULL rows where the drop-off time is at or before the pickup time.
+# Comment: There is 1 non-NULL row where the drop-off time is at or before the pickup time.
 
 # COMMAND ----------
 
@@ -283,7 +290,7 @@ clean.createOrReplaceTempView("my_clean")
 # C1. Headline numbers: total trips, total fare collected, average fare, average trip distance.
 #     Round money to 2 decimals and distance to 3.
 # TODO
-# Answer:
+# Answer: 19,072 total trips, $234,481.53 total fare collected, $12.29 average fare, 2.852 miles average trip distance
 # C1 — Headline numbers
 
 c1 = clean.agg(
@@ -307,7 +314,7 @@ display(
 # C2. Which HOUR OF THE DAY has the most pickups? Show all 24 hours ordered by trip count.
 #     Hint: F.hour("tpep_pickup_datetime")
 # TODO
-# Answer: busiest hour is ______ with ______ trips
+# Answer: busiest hour is 18 (6 PM) with 1,261 trips
 # C2 — Pickups by hour
 
 hourly_pickups = (
@@ -324,7 +331,7 @@ display(hourly_pickups)
 
 # C3. Top 5 pickup_zip values by number of trips. For each, also show average fare and average distance.
 # TODO
-# Answer:
+# Answer: Top 5 pickup ZIPs are 10001 (1,079 trips), 10003 (1,021 trips), 10011 (985 trips), 10021 (901 trips), and 10018 (875 trips)
 # C3 — Five busiest pickup ZIP codes
 
 top_zips = (
@@ -355,7 +362,7 @@ display(top_zips)
 # MAGIC --     counting only zips with at least 50 trips?
 # MAGIC --     Hint: .groupBy(...).agg(...) then .filter(F.col("trips") >= 50)
 # MAGIC -- TODO
-# MAGIC -- Answer:
+# MAGIC -- Answer: ZIP code 10003 has the highest average fare per mile at $7.86 across 1,021 trips ZIP code 10003 has the highest average fare per mile at $7.86 across 1,021 trips
 # MAGIC
 # MAGIC SELECT
 # MAGIC     pickup_zip,
@@ -374,7 +381,7 @@ display(top_zips)
 #     (a) What is the average trip duration?
 #     (b) Which DAY OF THE WEEK has the most trips? Hint: F.date_format(col, "EEEE")
 # TODO
-# Answer: (a) ______ minutes   (b) ______
+# Answer: (a) 15 minutes   (b) Friday (3,109 trips)
 
 # C5 — Add duration_min
 
@@ -414,7 +421,7 @@ display(day_counts)
 # C6. Show the single longest trip by distance, and the single most expensive trip by fare.
 #     Print the full row for each.
 # TODO
-# Answer:
+# Answer: Longest trip is 189.1 miles; most expensive trip cost $800.00
 
 # C6(a) — Longest trip by distance
 
