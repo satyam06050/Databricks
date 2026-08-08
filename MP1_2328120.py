@@ -1,0 +1,290 @@
+# Databricks notebook source
+# MAGIC %md
+# MAGIC # Mini-Project 1 — Data Exploration (NYC Taxi)
+# MAGIC ### Databricks + Snowflake 70-Hour Programme | ExcelR × KIIT
+# MAGIC
+# MAGIC **Name:** Satyam Kumar  
+# MAGIC **Roll number:** ____2328120___________________  
+# MAGIC **Date started:** _______6/8/2026________________
+# MAGIC
+# MAGIC ---
+# MAGIC **Before you start:**
+# MAGIC 1. Set `SEED` in Cell 2 to the **last 4 digits of your roll number**. Do not change it later.
+# MAGIC 2. Run every cell top to bottom. Never skip Cell 2 — it builds *your* copy of the data.
+# MAGIC 3. Fill in every `# TODO`. Delete nothing.
+# MAGIC 4. Write your answer as a short comment under each result. A number with no sentence earns half marks.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Cell 1 — Imports and sanity check
+# MAGIC You'll know it worked when the schema prints 6 columns and the count is a five-digit number.
+
+# COMMAND ----------
+
+from pyspark.sql import functions as F
+
+base = spark.table("samples.nyctaxi.trips")
+base.printSchema()
+print("Rows in the shared source table:", base.count())
+display(base.limit(5))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Cell 2 — Build YOUR dataset  ⚠️ EDIT THE SEED, CHANGE NOTHING ELSE
+# MAGIC
+# MAGIC This cell deterministically produces a variant of the source data that belongs to you alone.
+# MAGIC Same seed ⇒ same rows, every single time. Different seed ⇒ different answers.
+# MAGIC
+# MAGIC **You'll know it worked when:** the printed row count is close to, but not equal to, the count
+# MAGIC from Cell 1, and it ends with your own digits — nobody else in the room will print the same number.
+
+# COMMAND ----------
+
+# ============================================================
+# EDIT THIS LINE ONLY
+SEED = 0000          # <-- last 4 digits of your roll number, e.g. SEED = 1742
+# ============================================================
+
+assert SEED != 0000, "Set SEED to the last 4 digits of your roll number before running."
+
+_keyed = base.withColumn(
+    "row_key",
+    F.xxhash64(
+        F.col("tpep_pickup_datetime").cast("string"),
+        F.col("tpep_dropoff_datetime").cast("string"),
+        F.col("trip_distance").cast("string"),
+        F.col("fare_amount").cast("string"),
+        F.col("pickup_zip").cast("string"),
+        F.col("dropoff_zip").cast("string"),
+        F.lit(SEED).cast("string"),
+    ),
+)
+
+# 1) keep a seeded subset of the rows
+_sampled = _keyed.filter(F.pmod(F.col("row_key"), F.lit(100)) >= 12)
+
+# 2) blank out the fare on a small seeded set of rows
+_nulled = _sampled.withColumn(
+    "fare_amount",
+    F.when(F.pmod(F.col("row_key"), F.lit(97)) == 0, F.lit(None).cast("double"))
+     .otherwise(F.col("fare_amount")),
+)
+
+# 3) re-insert a small seeded set of rows a second time
+_dupes = _nulled.filter(F.pmod(F.col("row_key"), F.lit(67)) == 0)
+
+trips = _nulled.unionByName(_dupes).drop("row_key")
+trips.createOrReplaceTempView("my_trips")
+
+print("SEED =", SEED)
+print("Rows in MY dataset:", trips.count())
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # PART A — Profile your data
+# MAGIC *(unlocks after Day 6 — DataFrame API)*
+# MAGIC
+# MAGIC Goal: describe what you have been given before you touch it. Do not clean anything yet.
+
+# COMMAND ----------
+
+# A1. How many rows and how many columns are in YOUR dataset?
+# TODO
+# Answer:
+
+# COMMAND ----------
+
+# A2. Print the schema. In a comment, write the data type of every column in plain English,
+#     e.g. "fare_amount is a double — money in US dollars".
+# TODO
+# Answer:
+
+# COMMAND ----------
+
+# A3. What is the earliest and the latest pickup timestamp in your data?
+#     Hint: F.min(...) and F.max(...) inside .agg()
+# TODO
+# Answer: the data covers ______ to ______
+
+# COMMAND ----------
+
+# A4. How many rows are EXACT duplicates (every column identical to another row)?
+#     Hint: compare .count() with .dropDuplicates().count()
+# TODO
+# Answer: ______ duplicate rows
+
+# COMMAND ----------
+
+# A5. How many NULLs are there in each column?
+#     Hint: build one .agg() with F.count(F.when(F.col(c).isNull(), c)).alias(c) for each column,
+#     or loop over trips.columns.
+# TODO
+# Answer:
+
+# COMMAND ----------
+
+# A6. Count the rows that look wrong even though they are not null:
+#     (a) fare_amount <= 0
+#     (b) trip_distance <= 0
+#     (c) dropoff timestamp is earlier than or equal to the pickup timestamp
+# TODO
+# Answer: (a) ______  (b) ______  (c) ______
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # PART B — Clean your data
+# MAGIC *(unlocks after Day 7 — transformations)*
+# MAGIC
+# MAGIC Apply the five rules **in this order** and record how many rows survive each step.
+# MAGIC This is your data-quality funnel and it is worth marks on its own.
+# MAGIC
+# MAGIC | Step | Rule | Rows after |
+# MAGIC |---|---|---|
+# MAGIC | 0 | raw (`trips`) | |
+# MAGIC | 1 | drop exact duplicates | |
+# MAGIC | 2 | drop rows where `fare_amount` is NULL | |
+# MAGIC | 3 | drop rows where `fare_amount <= 0` | |
+# MAGIC | 4 | drop rows where `trip_distance <= 0` | |
+# MAGIC | 5 | drop rows where dropoff <= pickup | |
+# MAGIC
+# MAGIC Call the final result `clean` and register it as a temp view called `my_clean`.
+
+# COMMAND ----------
+
+# TODO — build `clean` step by step and print the count after each step.
+
+# clean = ...
+# clean.createOrReplaceTempView("my_clean")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC **B7 (written, 3–4 sentences).** For each of the five rules, say in one line *why* a real analyst
+# MAGIC would drop those rows — and name one rule you think is arguable, and what you would do instead.
+# MAGIC Write your answer in the cell below.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC *Your answer here:*
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # PART C — Business questions
+# MAGIC *(unlocks after Day 7)*
+# MAGIC
+# MAGIC Use `clean` (or the `my_clean` view) for everything below. You may answer in PySpark or in `%sql` —
+# MAGIC use at least one of each somewhere in this section.
+
+# COMMAND ----------
+
+# C1. Headline numbers: total trips, total fare collected, average fare, average trip distance.
+#     Round money to 2 decimals and distance to 3.
+# TODO
+# Answer:
+
+# COMMAND ----------
+
+# C2. Which HOUR OF THE DAY has the most pickups? Show all 24 hours ordered by trip count.
+#     Hint: F.hour("tpep_pickup_datetime")
+# TODO
+# Answer: busiest hour is ______ with ______ trips
+
+# COMMAND ----------
+
+# C3. Top 5 pickup_zip values by number of trips. For each, also show average fare and average distance.
+# TODO
+# Answer:
+
+# COMMAND ----------
+
+# C4. Create a column `fare_per_mile` = fare_amount / trip_distance.
+#     Which 10 pickup zips have the HIGHEST average fare per mile,
+#     counting only zips with at least 50 trips?
+#     Hint: .groupBy(...).agg(...) then .filter(F.col("trips") >= 50)
+# TODO
+# Answer:
+
+# COMMAND ----------
+
+# C5. Create a column `duration_min` = (dropoff - pickup) in minutes.
+#     Hint: (F.unix_timestamp("tpep_dropoff_datetime") - F.unix_timestamp("tpep_pickup_datetime")) / 60
+#     (a) What is the average trip duration?
+#     (b) Which DAY OF THE WEEK has the most trips? Hint: F.date_format(col, "EEEE")
+# TODO
+# Answer: (a) ______ minutes   (b) ______
+
+# COMMAND ----------
+
+# C6. Show the single longest trip by distance, and the single most expensive trip by fare.
+#     Print the full row for each.
+# TODO
+# Answer:
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # PART D — Your own question
+
+# COMMAND ----------
+
+# D1. Ask ONE question of this dataset that has not been asked above, and answer it with code.
+#     State the question as a comment, then write the query, then write 2–3 sentences on what you found
+#     and why a taxi company would care.
+# TODO
+# My question:
+# What I found:
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # PART E — Submission signature
+# MAGIC
+# MAGIC Run the cell below **exactly as written** after `clean` exists. Copy the printed block into your
+# MAGIC findings summary. It is the proof that these numbers came from your own dataset.
+
+# COMMAND ----------
+
+sig = clean.select(
+    F.pmod(
+        F.xxhash64(
+            F.col("tpep_pickup_datetime").cast("string"),
+            F.col("tpep_dropoff_datetime").cast("string"),
+            F.col("trip_distance").cast("string"),
+            F.col("fare_amount").cast("string"),
+            F.col("pickup_zip").cast("string"),
+            F.col("dropoff_zip").cast("string"),
+        ),
+        F.lit(1000003),
+    ).alias("h")
+).agg(
+    F.count("*").alias("clean_rows"),
+    F.sum("h").alias("dataset_signature"),
+).collect()[0]
+
+totals = clean.agg(
+    F.round(F.sum("fare_amount"), 2).alias("total_fare"),
+    F.round(F.avg("trip_distance"), 4).alias("avg_distance"),
+).collect()[0]
+
+print("=========== MINI-PROJECT 1 SIGNATURE ===========")
+print("SEED              :", SEED)
+print("CLEAN ROWS        :", sig["clean_rows"])
+print("DATASET SIGNATURE :", sig["dataset_signature"])
+print("TOTAL FARE        :", totals["total_fare"])
+print("AVG DISTANCE      :", totals["avg_distance"])
+print("================================================")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Finally
+# MAGIC 1. Open **Query History** (left sidebar), find one of your `groupBy` queries, open its **Query Profile**
+# MAGIC    and take a screenshot showing rows read and time taken. Submit it with your notebook.
+# MAGIC 2. Export this notebook: **File → Export → HTML** (or `.ipynb`) and submit the file.
+# MAGIC 3. Submit your 1-page findings summary with the signature block pasted at the bottom.
