@@ -44,7 +44,7 @@ display(base.limit(5))
 
 # ============================================================
 # EDIT THIS LINE ONLY
-SEED = 0000          # <-- last 4 digits of your roll number, e.g. SEED = 1742
+SEED = 8120          # <-- last 4 digits of your roll number, e.g. SEED = 1742
 # ============================================================
 
 assert SEED != 0000, "Set SEED to the last 4 digits of your roll number before running."
@@ -94,6 +94,11 @@ print("Rows in MY dataset:", trips.count())
 # A1. How many rows and how many columns are in YOUR dataset?
 # TODO
 # Answer:
+# A1
+print("Rows:", trips.count())
+print("Columns:", len(trips.columns))
+
+# Comment: The dataset contains [WRITE RESULT] rows and 6 columns.
 
 # COMMAND ----------
 
@@ -101,6 +106,8 @@ print("Rows in MY dataset:", trips.count())
 #     e.g. "fare_amount is a double — money in US dollars".
 # TODO
 # Answer:
+# A2
+trips.printSchema()
 
 # COMMAND ----------
 
@@ -108,6 +115,15 @@ print("Rows in MY dataset:", trips.count())
 #     Hint: F.min(...) and F.max(...) inside .agg()
 # TODO
 # Answer: the data covers ______ to ______
+# A3
+result = trips.agg(
+    F.min("tpep_pickup_datetime").alias("earliest_pickup"),
+    F.max("tpep_pickup_datetime").alias("latest_pickup")
+)
+
+display(result)
+
+# Comment: The dataset covers the period from [EARLIEST] to [LATEST] based on pickup timestamps.
 
 # COMMAND ----------
 
@@ -115,6 +131,18 @@ print("Rows in MY dataset:", trips.count())
 #     Hint: compare .count() with .dropDuplicates().count()
 # TODO
 # Answer: ______ duplicate rows
+# A4
+duplicate_count = (
+    trips.groupBy(trips.columns)
+         .count()
+         .filter(F.col("count") > 1)
+         .agg(F.sum(F.col("count") - 1).alias("duplicate_rows"))
+         .first()["duplicate_rows"]
+)
+
+print("Exact duplicate rows:", duplicate_count)
+
+# Comment: There are [RESULT] rows that are duplicate occurrences of another identical row.
 
 # COMMAND ----------
 
@@ -123,6 +151,13 @@ print("Rows in MY dataset:", trips.count())
 #     or loop over trips.columns.
 # TODO
 # Answer:
+# A5
+null_counts = trips.select([
+    F.sum(F.col(c).isNull().cast("int")).alias(c)
+    for c in trips.columns
+])
+
+display(null_counts)
 
 # COMMAND ----------
 
@@ -132,6 +167,36 @@ print("Rows in MY dataset:", trips.count())
 #     (c) dropoff timestamp is earlier than or equal to the pickup timestamp
 # TODO
 # Answer: (a) ______  (b) ______  (c) ______
+# A6.1
+fare_wrong = trips.filter(
+    F.col("fare_amount").isNotNull() &
+    (F.col("fare_amount") <= 0)
+).count()
+
+print("fare_amount <= 0:", fare_wrong)
+
+# Comment: There are [RESULT] non-NULL rows with a fare amount less than or equal to zero.
+
+# A6.2
+distance_wrong = trips.filter(
+    F.col("trip_distance").isNotNull() &
+    (F.col("trip_distance") <= 0)
+).count()
+
+print("trip_distance <= 0:", distance_wrong)
+
+# Comment: There are [RESULT] non-NULL rows with a trip distance less than or equal to zero.
+
+# A6.3
+time_wrong = trips.filter(
+    F.col("tpep_pickup_datetime").isNotNull() &
+    F.col("tpep_dropoff_datetime").isNotNull() &
+    (F.col("tpep_dropoff_datetime") <= F.col("tpep_pickup_datetime"))
+).count()
+
+print("dropoff <= pickup:", time_wrong)
+
+# Comment: There are [RESULT] non-NULL rows where the drop-off time is at or before the pickup time.
 
 # COMMAND ----------
 
