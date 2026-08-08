@@ -284,6 +284,23 @@ clean.createOrReplaceTempView("my_clean")
 #     Round money to 2 decimals and distance to 3.
 # TODO
 # Answer:
+# C1 — Headline numbers
+
+c1 = clean.agg(
+    F.count("*").alias("total_trips"),
+    F.sum("fare_amount").alias("total_fare_collected"),
+    F.avg("fare_amount").alias("average_fare"),
+    F.avg("trip_distance").alias("average_trip_distance")
+)
+
+display(
+    c1.select(
+        "total_trips",
+        F.round("total_fare_collected", 2).alias("total_fare_collected"),
+        F.round("average_fare", 2).alias("average_fare"),
+        F.round("average_trip_distance", 3).alias("average_trip_distance")
+    )
+)
 
 # COMMAND ----------
 
@@ -291,21 +308,64 @@ clean.createOrReplaceTempView("my_clean")
 #     Hint: F.hour("tpep_pickup_datetime")
 # TODO
 # Answer: busiest hour is ______ with ______ trips
+# C2 — Pickups by hour
+
+hourly_pickups = (
+    clean
+    .withColumn("pickup_hour", F.hour("tpep_pickup_datetime"))
+    .groupBy("pickup_hour")
+    .count()
+    .orderBy(F.desc("count"))
+)
+
+display(hourly_pickups)
 
 # COMMAND ----------
 
 # C3. Top 5 pickup_zip values by number of trips. For each, also show average fare and average distance.
 # TODO
 # Answer:
+# C3 — Five busiest pickup ZIP codes
+
+top_zips = (
+    clean
+    .groupBy("pickup_zip")
+    .agg(
+        F.count("*").alias("trip_count"),
+        F.avg("fare_amount").alias("average_fare"),
+        F.avg("trip_distance").alias("average_distance")
+    )
+    .orderBy(F.desc("trip_count"))
+    .limit(5)
+    .select(
+        "pickup_zip",
+        "trip_count",
+        F.round("average_fare", 2).alias("average_fare"),
+        F.round("average_distance", 3).alias("average_distance")
+    )
+)
+
+display(top_zips)
 
 # COMMAND ----------
 
-# C4. Create a column `fare_per_mile` = fare_amount / trip_distance.
-#     Which 10 pickup zips have the HIGHEST average fare per mile,
-#     counting only zips with at least 50 trips?
-#     Hint: .groupBy(...).agg(...) then .filter(F.col("trips") >= 50)
-# TODO
-# Answer:
+# MAGIC %sql
+# MAGIC -- C4. Create a column `fare_per_mile` = fare_amount / trip_distance.
+# MAGIC --     Which 10 pickup zips have the HIGHEST average fare per mile,
+# MAGIC --     counting only zips with at least 50 trips?
+# MAGIC --     Hint: .groupBy(...).agg(...) then .filter(F.col("trips") >= 50)
+# MAGIC -- TODO
+# MAGIC -- Answer:
+# MAGIC
+# MAGIC SELECT
+# MAGIC     pickup_zip,
+# MAGIC     COUNT(*) AS trip_count,
+# MAGIC     ROUND(AVG(fare_amount / trip_distance), 2) AS avg_fare_per_mile
+# MAGIC FROM my_clean
+# MAGIC GROUP BY pickup_zip
+# MAGIC HAVING COUNT(*) >= 50
+# MAGIC ORDER BY avg_fare_per_mile DESC
+# MAGIC LIMIT 10;
 
 # COMMAND ----------
 
@@ -316,12 +376,61 @@ clean.createOrReplaceTempView("my_clean")
 # TODO
 # Answer: (a) ______ minutes   (b) ______
 
+# C5 — Add duration_min
+
+clean_with_duration = clean.withColumn(
+    "duration_min",
+    (
+        F.unix_timestamp("tpep_dropoff_datetime")
+        - F.unix_timestamp("tpep_pickup_datetime")
+    ) / 60
+)
+
+avg_duration = clean_with_duration.agg(
+    F.avg("duration_min").alias("average_duration_min")
+)
+
+display(
+    avg_duration.select(
+        F.round("average_duration_min", 2).alias("average_duration_min")
+    )
+)
+
+
+# C5(b) — Trips by day of week
+
+day_counts = (
+    clean_with_duration
+    .withColumn("day_of_week", F.date_format("tpep_pickup_datetime", "EEEE"))
+    .groupBy("day_of_week")
+    .count()
+    .orderBy(F.desc("count"))
+)
+
+display(day_counts)
+
 # COMMAND ----------
 
 # C6. Show the single longest trip by distance, and the single most expensive trip by fare.
 #     Print the full row for each.
 # TODO
 # Answer:
+
+# C6(a) — Longest trip by distance
+
+longest_trip = clean.orderBy(
+    F.desc("trip_distance")
+).limit(1)
+
+display(longest_trip)
+
+# C6(b) — Most expensive trip by fare
+
+most_expensive_trip = clean.orderBy(
+    F.desc("fare_amount")
+).limit(1)
+
+display(most_expensive_trip)
 
 # COMMAND ----------
 
@@ -330,12 +439,35 @@ clean.createOrReplaceTempView("my_clean")
 
 # COMMAND ----------
 
-# D1. Ask ONE question of this dataset that has not been asked above, and answer it with code.
-#     State the question as a comment, then write the query, then write 2–3 sentences on what you found
-#     and why a taxi company would care.
-# TODO
+# D1
 # My question:
+# Which pickup ZIP codes have the highest average trip distance, considering only ZIP codes with at least 50 trips?
+
+d1 = (
+    clean
+    .groupBy("pickup_zip")
+    .agg(
+        F.count("*").alias("trip_count"),
+        F.avg("trip_distance").alias("avg_trip_distance")
+    )
+    .filter(F.col("trip_count") >= 50)
+    .orderBy(F.desc("avg_trip_distance"))
+    .limit(10)
+)
+
+display(
+    d1.select(
+        "pickup_zip",
+        "trip_count",
+        F.round("avg_trip_distance", 3).alias("avg_trip_distance")
+    )
+)
+
+
 # What I found:
+
+ZIP code 11422 has the highest average trip distance at 15.825 miles across 360 trips, followed by 11371 at 9.620 miles across 425 trips. The results show that some pickup areas generate substantially longer trips than others. A taxi company could use this information to position drivers and vehicles more effectively in areas that tend to generate longer-distance, potentially higher-value rides.
+
 
 # COMMAND ----------
 
