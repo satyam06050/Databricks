@@ -224,6 +224,34 @@ print("dropoff <= pickup:", time_wrong)
 
 # clean = ...
 # clean.createOrReplaceTempView("my_clean")
+# Step 0 — raw dataset
+clean = trips
+print("Step 0 - Raw:", clean.count())
+
+# Step 1 — drop exact duplicate rows
+clean = clean.dropDuplicates()
+print("Step 1 - Drop duplicates:", clean.count())
+
+# Step 2 — drop rows where fare_amount is NULL
+clean = clean.filter(F.col("fare_amount").isNotNull())
+print("Step 2 - Drop NULL fares:", clean.count())
+
+# Step 3 — drop rows where fare_amount <= 0
+clean = clean.filter(F.col("fare_amount") > 0)
+print("Step 3 - Drop invalid fares:", clean.count())
+
+# Step 4 — drop rows where trip_distance <= 0
+clean = clean.filter(F.col("trip_distance") > 0)
+print("Step 4 - Drop invalid distances:", clean.count())
+
+# Step 5 — drop rows where dropoff is at or before pickup
+clean = clean.filter(
+    F.col("tpep_dropoff_datetime") > F.col("tpep_pickup_datetime")
+)
+print("Step 5 - Drop invalid timestamps:", clean.count())
+
+# Register final clean dataset
+clean.createOrReplaceTempView("my_clean")
 
 # COMMAND ----------
 
@@ -236,6 +264,10 @@ print("dropoff <= pickup:", time_wrong)
 
 # MAGIC %md
 # MAGIC *Your answer here:*
+# MAGIC Exact duplicate rows are removed because they can cause the same trip to be counted more than once. Rows with a NULL fare are removed because fare is required for reliable fare-based analysis. Rows with non-positive fares or distances are removed because they represent invalid or impossible trip measurements. Rows where drop-off occurs at or before pickup are removed because they represent an invalid trip duration.
+# MAGIC
+# MAGIC The arguable rule is dropping rows with `trip_distance <= 0`, because a zero distance could occasionally represent a legitimate trip such as a very short movement or a measurement issue. Instead of automatically dropping these rows, I would investigate them and, if possible, validate them against trip duration or location data before deciding whether to exclude them.
+# MAGIC
 
 # COMMAND ----------
 
