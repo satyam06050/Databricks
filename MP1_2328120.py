@@ -470,10 +470,12 @@ display(
     )
 )
 
-
 # What I found:
-
-ZIP code 11422 has the highest average trip distance at 15.825 miles across 360 trips, followed by 11371 at 9.620 miles across 425 trips. The results show that some pickup areas generate substantially longer trips than others. A taxi company could use this information to position drivers and vehicles more effectively in areas that tend to generate longer-distance, potentially higher-value rides.
+# ZIP code 11422 has the highest average trip distance at 15.825 miles across 360 trips,
+# followed by 11371 at 9.620 miles across 425 trips. The results show that some pickup
+# areas generate substantially longer trips than others. A taxi company could use this
+# information to position drivers and vehicles more effectively in areas that tend to
+# generate longer-distance, potentially higher-value rides.
 
 
 # COMMAND ----------
