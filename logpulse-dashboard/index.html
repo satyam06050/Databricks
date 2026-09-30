@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#f5f3ec">
+	<meta name="description" content="LogPulse operational analytics for web server logs, endpoint health, incidents, and client traffic.">
+	<title>LogPulse — Web Server Log Error Analysis</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="./style.css">
+	<script src="./script.js" defer></script>
+</head>
+<body>
+	<div class="app-shell">
+		<header class="topbar">
+			<a class="brand" href="#top" aria-label="LogPulse home">
+				<span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+				<span>log<span>pulse</span></span>
+			</a>
+			<div class="topbar-context">Web Server Log Error Analysis</div>
+			<div class="topbar-meta">
+				<span class="status-badge"><span class="status-dot"></span>Pipeline Healthy</span>
+				<span class="date-range">01 Mar 2025 <span aria-hidden="true">—</span> 30 Mar 2025</span>
+			</div>
+		</header>
+
+		<main id="top">
+			<section class="intro" aria-labelledby="page-title">
+				<div class="intro-copy">
+					<p class="eyebrow"><span class="eyebrow-line"></span> LOG OPERATIONS / MONTHLY OVERVIEW</p>
+					<h1 id="page-title">Operational visibility<br>from <span>2.1M+</span> web requests.</h1>
+					<p class="intro-description">LogPulse parses, cleans, deduplicates, normalizes, and analyzes server logs to make reliability patterns easier to see and act on.</p>
+				</div>
+				<div class="intro-aside" aria-label="Reporting period">
+					<span class="aside-label">REPORTING WINDOW</span>
+					<strong>30 days</strong>
+					<span>March 01 — March 30, 2025</span>
+				</div>
+			</section>
+
+			<div id="loading-state" class="state-panel" role="status">
+				<span class="loading-mark" aria-hidden="true"></span>
+				<div><strong>Loading the log warehouse</strong><span>Aggregating endpoint and client activity…</span></div>
+			</div>
+			<div id="error-state" class="state-panel error-state" role="alert" hidden>
+				<span class="error-symbol" aria-hidden="true">!</span>
+				<div><strong>Dashboard data could not be loaded</strong><span id="error-message">Check that logpulse_data.json is available from this page.</span></div>
+			</div>
+
+			<div id="dashboard-content" hidden>
+				<section class="kpi-grid" aria-label="Key performance indicators">
+					<article class="kpi-card kpi-primary">
+						<div class="kpi-top"><span>Total requests</span><span class="kpi-icon icon-request" aria-hidden="true">↗</span></div>
+						<strong class="kpi-value" id="kpi-requests">—</strong>
+						<span class="kpi-note">Processed in the reporting window</span>
+					</article>
+					<article class="kpi-card">
+						<div class="kpi-top"><span>5xx errors</span><span class="kpi-icon icon-error" aria-hidden="true">!</span></div>
+						<strong class="kpi-value" id="kpi-errors">—</strong>
+						<span class="kpi-note"><span id="kpi-error-rate">—</span> of all requests</span>
+					</article>
+					<article class="kpi-card">
+						<div class="kpi-top"><span>Logical endpoints</span><span class="kpi-icon icon-endpoint" aria-hidden="true">⌘</span></div>
+						<strong class="kpi-value" id="kpi-endpoints">—</strong>
+						<span class="kpi-note">Normalized route patterns</span>
+					</article>
+					<article class="kpi-card">
+						<div class="kpi-top"><span>Client IPs</span><span class="kpi-icon icon-clients" aria-hidden="true">◎</span></div>
+						<strong class="kpi-value" id="kpi-clients">—</strong>
+						<span class="kpi-note">Distinct clients observed</span>
+					</article>
+					<article class="kpi-card kpi-share">
+						<div class="kpi-top"><span>Top 1% traffic share</span><span class="kpi-icon icon-share" aria-hidden="true">◒</span></div>
+						<strong class="kpi-value" id="kpi-share">—</strong>
+						<span class="kpi-note">Traffic from the 50 busiest IPs</span>
+					</article>
+				</section>
+
+				<section class="section-block analytics-section" aria-labelledby="error-chart-title">
+					<div class="section-heading">
+						<div><p class="eyebrow">SERVICE RELIABILITY</p><h2 id="error-chart-title">5xx error rate</h2></div>
+						<div class="chart-summary"><span class="legend-dot purple-dot"></span><span>Overall hourly rate</span><strong id="overall-error-rate">—</strong></div>
+					</div>
+					<div class="chart-panel error-chart-panel">
+						<div class="chart-meta"><span>Requests aggregated by hour</span><span class="chart-legend"><i class="legend-dot purple-dot"></i> Normal <i class="legend-dot red-dot"></i> Elevated</span></div>
+						<div class="chart-wrap" id="error-chart-wrap">
+							<canvas id="error-chart" role="img" aria-label="Hourly overall 5xx error rate through March 2025"></canvas>
+							<div class="chart-tooltip" id="error-tooltip" role="status" aria-live="polite"></div>
+						</div>
+						<div class="chart-axis"><span>01 MAR</span><span>08 MAR</span><span>15 MAR</span><span>22 MAR</span><span>30 MAR</span></div>
+					</div>
+				</section>
+
+				<section class="section-block" aria-labelledby="endpoint-title">
+					<div class="section-heading endpoint-heading">
+						<div><p class="eyebrow">ROUTE HEALTH</p><h2 id="endpoint-title">Endpoint performance</h2></div>
+						<span class="section-count" id="endpoint-count">— endpoints</span>
+					</div>
+					<div class="table-toolbar">
+						<label class="search-field"><span class="sr-only">Search endpoints</span><span class="search-icon" aria-hidden="true">⌕</span><input id="endpoint-search" type="search" placeholder="Search endpoints" autocomplete="off"></label>
+						<label class="select-field"><span class="sr-only">Filter by endpoint</span><select id="endpoint-filter"><option value="">All endpoints</option></select></label>
+						<button id="reset-filters" class="quiet-button" type="button" disabled>Reset filters</button>
+					</div>
+					<div class="table-scroll">
+						<table class="data-table endpoint-table">
+							<thead><tr>
+								<th scope="col"><button class="sort-button" data-sort="endpoint" type="button">Endpoint <span class="sort-mark"></span></button></th>
+								<th scope="col" class="numeric"><button class="sort-button" data-sort="requests" type="button">Requests <span class="sort-mark"></span></button></th>
+								<th scope="col" class="numeric"><button class="sort-button" data-sort="errors5xx" type="button">5xx errors <span class="sort-mark"></span></button></th>
+								<th scope="col" class="numeric"><button class="sort-button active" data-sort="rate5xx" type="button" aria-label="Sort by 5xx rate, descending">5xx rate <span class="sort-mark">↓</span></button></th>
+								<th scope="col" class="numeric"><button class="sort-button" data-sort="errors4xx" type="button">4xx errors <span class="sort-mark"></span></button></th>
+								<th scope="col" class="numeric"><span title="Peak hourly distinct-IP count; hourly distinct counts cannot be added into a unique monthly total.">Distinct IPs <span aria-hidden="true">ⓘ</span></span></th>
+							</tr></thead>
+							<tbody id="endpoint-rows"></tbody>
+						</table>
+					</div>
+					<p id="endpoint-empty" class="empty-state" hidden>No endpoints match these filters.</p>
+					<p class="table-footnote">Distinct IPs shows the peak hourly count; hourly unique counts are not additive.</p>
+				</section>
+
+				<section class="section-block incident-section" aria-labelledby="incident-title">
+					<div class="section-heading">
+						<div><p class="eyebrow">INVESTIGATION WINDOW</p><h2 id="incident-title">Incident timeline</h2></div>
+						<span class="incident-total"><span class="legend-dot red-dot"></span> 2 detected incidents</span>
+					</div>
+					<div class="incident-grid">
+						<article class="incident-card">
+							<div class="incident-top"><span class="incident-label"><span class="legend-dot red-dot"></span> ELEVATED ERROR RATE</span><time datetime="2025-03-14T09:00">14 MAR · 09:00</time></div>
+							<div class="incident-main"><code>/api/checkout</code><span class="incident-rate">~12% <small>5xx rate</small></span></div>
+							<p>Checkout route experienced a sharp increase in server errors.</p>
+						</article>
+						<article class="incident-card">
+							<div class="incident-top"><span class="incident-label"><span class="legend-dot red-dot"></span> ELEVATED ERROR RATE</span><time datetime="2025-03-20T16:00">20 MAR · 16:00</time></div>
+							<div class="incident-main"><code>/api/search</code><span class="incident-rate">~3.2% <small>5xx rate</small></span></div>
+							<p>Search route showed sustained errors above its normal baseline.</p>
+						</article>
+					</div>
+				</section>
+
+				<section class="section-block volume-section" aria-labelledby="volume-title">
+					<div class="section-heading">
+						<div><p class="eyebrow">TRAFFIC DISTRIBUTION</p><h2 id="volume-title">Request volume</h2></div>
+						<span class="chart-summary"><span class="legend-dot purple-dot"></span> Requests by endpoint</span>
+					</div>
+					<div class="chart-panel volume-panel">
+						<div class="chart-wrap volume-chart-wrap" id="volume-chart-wrap">
+							<canvas id="volume-chart" role="img" aria-label="Request volume by logical endpoint"></canvas>
+							<div class="chart-tooltip" id="volume-tooltip" role="status" aria-live="polite"></div>
+						</div>
+					</div>
+				</section>
+
+				<section class="section-block client-section" aria-labelledby="client-title">
+					<div class="section-heading client-heading">
+						<div><p class="eyebrow">TRAFFIC CONCENTRATION</p><h2 id="client-title">Client IP analysis</h2></div>
+						<div class="client-highlight"><strong id="top-client-share">—</strong><span>of requests from<br>top 50 IPs</span></div>
+					</div>
+					<div class="client-caption"><span class="top-client-key"></span> Top 1% of observed client IPs</div>
+					<div class="table-scroll client-table-scroll">
+						<table class="data-table client-table">
+							<thead><tr>
+								<th scope="col">Client IP</th><th scope="col" class="numeric">Requests</th><th scope="col" class="numeric">Traffic %</th><th scope="col" class="numeric">Distinct endpoints</th><th scope="col">First seen</th><th scope="col">Last seen</th>
+							</tr></thead>
+							<tbody id="client-rows"></tbody>
+						</table>
+					</div>
+					<div class="table-pagination"><span id="client-page-label">—</span><div><button id="client-prev" class="page-button" type="button" aria-label="Previous client page" disabled>←</button><button id="client-next" class="page-button" type="button" aria-label="Next client page">→</button></div></div>
+				</section>
+
+				<section class="section-block pipeline-section" aria-labelledby="pipeline-title">
+					<div class="section-heading">
+						<div><p class="eyebrow">DATA LINEAGE</p><h2 id="pipeline-title">From raw logs to insight</h2></div>
+						<span class="pipeline-note"><span class="status-dot"></span> Monthly pipeline validation</span>
+					</div>
+					<div class="pipeline-track" aria-label="Raw logs 2,166,900, parsed 2,159,900, deduplicated 2,153,900, final silver 2,152,700, gold endpoint-hour 8,640">
+						<article class="pipeline-stage"><span class="stage-index">01</span><span class="stage-name">Raw logs</span><strong>2,166,900</strong><span class="stage-caption">Bronze input</span></article>
+						<span class="pipeline-arrow" aria-hidden="true">→</span>
+						<article class="pipeline-stage"><span class="stage-index">02</span><span class="stage-name">Parsed</span><strong>2,159,900</strong><span class="stage-caption">Structured records</span></article>
+						<span class="pipeline-arrow" aria-hidden="true">→</span>
+						<article class="pipeline-stage"><span class="stage-index">03</span><span class="stage-name">Deduplicated</span><strong>2,153,900</strong><span class="stage-caption">Unique log events</span></article>
+						<span class="pipeline-arrow" aria-hidden="true">→</span>
+						<article class="pipeline-stage"><span class="stage-index">04</span><span class="stage-name">Final Silver</span><strong>2,152,700</strong><span class="stage-caption">Cleaned records</span></article>
+						<span class="pipeline-arrow" aria-hidden="true">→</span>
+						<article class="pipeline-stage pipeline-gold"><span class="stage-index">05</span><span class="stage-name">Gold endpoint-hour</span><strong>8,640</strong><span class="stage-caption">Hourly aggregates</span></article>
+					</div>
+				</section>
+
+				<section class="section-block findings-section" aria-labelledby="findings-title">
+					<div class="section-heading"><div><p class="eyebrow">WHAT MATTERS</p><h2 id="findings-title">Key findings</h2></div></div>
+					<div class="findings-grid">
+						<article class="finding"><span class="finding-index">01 / RELIABILITY</span><strong>Checkout incident</strong><span>Detected 14 Mar 2025 at 09:00</span><code>/api/checkout · ~12% 5xx</code></article>
+						<article class="finding"><span class="finding-index">02 / RELIABILITY</span><strong>Search incident</strong><span>Detected 20 Mar 2025 at 16:00</span><code>/api/search · ~3.2% 5xx</code></article>
+						<article class="finding"><span class="finding-index">03 / TRAFFIC</span><strong>Traffic is concentrated</strong><span>Top 50 client IPs account for</span><code id="finding-share">— of requests</code></article>
+						<article class="finding"><span class="finding-index">04 / NORMALIZATION</span><strong>Routes made readable</strong><span>Raw paths normalized into</span><code>27,009 → 12 logical endpoints</code></article>
+					</div>
+				</section>
+			</div>
+		</main>
+		<footer class="footer"><span>LOGPULSE <span aria-hidden="true">/</span> WEB SERVER LOG ANALYSIS</span><span>Reporting window: 01—30 March 2025</span></footer>
+	</div>
+</body>
+</html>
